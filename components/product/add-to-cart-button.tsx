@@ -11,6 +11,7 @@ interface AddToCartButtonProps {
   product: Product
   variant?: "default" | "outline"
   size?: "sm" | "default" | "lg"
+  disabled?: boolean
 }
 
 export function AddToCartButton({ product, variant = "default", size = "default" }: AddToCartButtonProps) {
@@ -35,7 +36,7 @@ export function AddToCartButton({ product, variant = "default", size = "default"
           id: product.id,
           name: product.name,
           price: product.price,
-          image_url: product.image_url,
+          image_url: product.image_url || "/placeholder.svg",
           brand: product.brand,
           stock_quantity: product.stock_quantity,
         },

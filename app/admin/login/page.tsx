@@ -13,7 +13,7 @@ export default function AdminLoginPage() {
               <strong>Superadmin:</strong>
             </p>
             <p>Username: Agungsaputra</p>
-            <p>Password: 12345678910</p>
+            <p>Password: 123</p>
             <p className="mt-2 text-xs">Akses penuh ke semua fitur manajemen sistem</p>
           </div>
         </div>

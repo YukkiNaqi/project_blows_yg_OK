@@ -7,9 +7,10 @@ import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { AuthGuard } from "@/components/auth/auth-guard"
+import SessionTimeoutManager from "@/components/auth/session-timeout-manager";
 import { LayoutDashboard, Package, ShoppingCart, Users, Settings, BarChart3, Menu, LogOut, Wrench } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { clientAuth } from "@/lib/auth"
+import { clientAuth } from "@/lib/client-auth"
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -32,7 +33,7 @@ export default function AdminLayout({
 
   const handleLogout = () => {
     clientAuth.clearAuth()
-    router.push("/admin/login")
+    router.push("/login")
   }
 
   const Sidebar = ({ mobile = false }) => (
@@ -80,6 +81,7 @@ export default function AdminLayout({
 
   return (
     <AuthGuard requireAdmin={true}>
+      <SessionTimeoutManager />
       <div className="min-h-screen bg-background">
         {/* Desktop Sidebar */}
         <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">

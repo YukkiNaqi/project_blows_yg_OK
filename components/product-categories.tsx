@@ -1,22 +1,12 @@
-"use client"
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+import { dbDirect, type Category } from "@/lib/server-db";
+import { CategoryCard } from "./category-card";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
-import { db, type Category } from "@/lib/database"
-
-export function ProductCategories() {
-  const [categories, setCategories] = useState<Category[]>([])
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const data = await db.categories.findAll()
-      setCategories(data)
-    }
-    fetchCategories()
-  }, [])
+export async function ProductCategories() {
+  const categories = await dbDirect.categories.findAll();
 
   return (
     <section className="py-16 bg-muted/30">
@@ -30,29 +20,11 @@ export function ProductCategories() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {categories.map((category, index) => (
-            <Card
+            <CategoryCard
               key={category.id}
-              className="group hover:shadow-lg transition-all duration-300 hover-lift animate-fade-in-up"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <CardContent className="p-6 text-center">
-                <div className="mb-4 overflow-hidden rounded-lg">
-                  <img
-                    src={category.image_url || "/placeholder.svg"}
-                    alt={category.name}
-                    className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{category.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4 text-balance">{category.description}</p>
-                <Button asChild variant="outline" size="sm" className="w-full bg-transparent">
-                  <Link href={`/products?category=${category.id}`}>
-                    Lihat Produk
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+              category={category}
+              index={index}
+            />
           ))}
         </div>
 
@@ -66,5 +38,5 @@ export function ProductCategories() {
         </div>
       </div>
     </section>
-  )
+  );
 }

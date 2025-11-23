@@ -1,26 +1,31 @@
-"use client"
-
-import { useState } from "react"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Clock, MapPin, Phone, Mail, CheckCircle } from "lucide-react"
-import { serviceTypes, type ServiceType } from "@/lib/services"
-import { ServiceBookingForm } from "@/components/services/service-booking-form"
+import { dbDirect } from "@/lib/server-db"
+import { ServiceBookingFormClient } from "@/components/services/service-booking-form-client"
 
-export default function ServicesPage() {
-  const [selectedService, setSelectedService] = useState<ServiceType | null>(null)
-  const [showBookingForm, setShowBookingForm] = useState(false)
+// Define the service type that matches the database schema
+interface Service {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  duration_hours: number;
+  is_active: boolean;
+  created_at: string;
+}
 
-  const handleBookService = (service: ServiceType) => {
-    setSelectedService(service)
-    setShowBookingForm(true)
-  }
+export default async function ServicesPage() {
+  let services: Service[] = [];
 
-  const handleBookingComplete = () => {
-    setShowBookingForm(false)
-    setSelectedService(null)
+  try {
+    services = await dbDirect.services.findAll();
+  } catch (error) {
+    console.error("Error fetching services:", error);
+    // Use an empty array as fallback
+    services = [];
   }
 
   return (
@@ -63,38 +68,47 @@ export default function ServicesPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {serviceTypes.map((service) => (
-                <Card key={service.id} className="group hover:shadow-lg transition-all duration-300">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      {service.name}
-                      <Badge variant="secondary" className="ml-2">
-                        {service.duration}
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription className="text-sm">{service.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="text-2xl font-bold text-primary">
-                          Rp {service.base_price.toLocaleString("id-ID")}
-                        </p>
-                        <p className="text-sm text-muted-foreground">Mulai dari</p>
+            {services.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {services.map((service) => (
+                  <Card key={service.id} className="group hover:shadow-lg transition-all duration-300">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        {service.name}
+                        <Badge variant="secondary" className="ml-2">
+                          {service.duration_hours} jam
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription className="text-sm">{service.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <p className="text-2xl font-bold text-primary">
+                            Rp {service.price.toLocaleString("id-ID")}
+                          </p>
+                          <p className="text-sm text-muted-foreground">Mulai dari</p>
+                        </div>
+                        <Clock className="h-5 w-5 text-muted-foreground" />
                       </div>
-                      <Clock className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <Button
-                      onClick={() => handleBookService(service)}
-                      className="w-full group-hover:bg-primary/90 transition-colors"
-                    >
-                      Pesan Layanan
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <ServiceBookingFormClient
+                        service={{
+                          id: service.id.toString(),
+                          name: service.name,
+                          description: service.description,
+                          base_price: service.price,
+                          duration: `${service.duration_hours} jam`
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-lg text-muted-foreground">Belum ada layanan tersedia</p>
+              </div>
+            )}
           </div>
         </section>
 
@@ -136,15 +150,6 @@ export default function ServicesPage() {
           </div>
         </section>
       </main>
-
-      {/* Booking Form Modal */}
-      {showBookingForm && selectedService && (
-        <ServiceBookingForm
-          service={selectedService}
-          onClose={() => setShowBookingForm(false)}
-          onComplete={handleBookingComplete}
-        />
-      )}
     </div>
   )
 }

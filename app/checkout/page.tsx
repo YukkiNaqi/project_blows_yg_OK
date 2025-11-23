@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { ShoppingCart, CreditCard, Truck, AlertCircle, MapPin } from "lucide-react"
 import { useCart } from "@/lib/cart"
-import { orderService, type Order } from "@/lib/orders"
+import { orderServiceClient, type Order } from "@/lib/order-service-client"
 import { formatCurrency } from "@/lib/database"
 import { toast } from "@/hooks/use-toast"
 
@@ -50,18 +50,24 @@ export default function CheckoutPage() {
   // Calculate costs when form data changes
   useEffect(() => {
     const subtotal = cart.total
-    const shipping = formData.shipping_address ? orderService.calculateShipping(formData.shipping_address) : 0
-    const tax = orderService.calculateTax(subtotal)
-    const total = subtotal + shipping + tax
+    const calculateCosts = async () => {
+      let shipping = 0
+      if (formData.shipping_address) {
+        shipping = await orderServiceClient.calculateShipping(formData.shipping_address)
+      }
+      const tax = await orderServiceClient.calculateTax(subtotal)
+      const total = subtotal + shipping + tax
 
-    setCosts({ subtotal, shipping, tax, total })
+      setCosts({ subtotal, shipping, tax, total })
+    }
+    calculateCosts()
   }, [cart.total, formData.shipping_address])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const validateForm = (): string | null => {
+  const validateForm = async (): Promise<string | null> => {
     if (!formData.customer_name.trim()) return "Nama lengkap harus diisi"
     if (!formData.customer_email.trim()) return "Email harus diisi"
     if (!formData.customer_phone.trim()) return "Nomor telepon harus diisi"
@@ -80,7 +86,7 @@ export default function CheckoutPage() {
     }
 
     // COD area validation
-    if (formData.payment_method === "cod" && !orderService.isCODAvailable(formData.shipping_address)) {
+    if (formData.payment_method === "cod" && !(await orderServiceClient.isCODAvailable(formData.shipping_address))) {
       return "COD hanya tersedia untuk area Jakarta"
     }
 
@@ -93,7 +99,7 @@ export default function CheckoutPage() {
 
     try {
       // Validate form
-      const validationError = validateForm()
+      const validationError = await validateForm()
       if (validationError) {
         toast({
           title: "Form tidak valid",
@@ -121,7 +127,7 @@ export default function CheckoutPage() {
         })),
       }
 
-      const order = await orderService.createOrder(orderData)
+      const order = await orderServiceClient.createOrder(orderData)
 
       // Clear cart
       clearCart()
@@ -143,6 +149,18 @@ export default function CheckoutPage() {
       setIsLoading(false)
     }
   }
+
+  const [codAvailable, setCodAvailable] = useState(false)
+
+  useEffect(() => {
+    const checkCOD = async () => {
+      if (formData.payment_method === "cod" && formData.shipping_address) {
+        const isAvailable = await orderServiceClient.isCODAvailable(formData.shipping_address)
+        setCodAvailable(isAvailable)
+      }
+    }
+    checkCOD()
+  }, [formData.payment_method, formData.shipping_address])
 
   if (cart.items.length === 0) {
     return null
@@ -258,7 +276,7 @@ export default function CheckoutPage() {
 
                     {formData.payment_method === "cod" &&
                       formData.shipping_address &&
-                      !orderService.isCODAvailable(formData.shipping_address) && (
+                      !codAvailable && (
                         <Alert className="mt-4">
                           <AlertCircle className="h-4 w-4" />
                           <AlertDescription>COD hanya tersedia untuk area Jakarta</AlertDescription>

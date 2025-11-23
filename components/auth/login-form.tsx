@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Lock, User, AlertCircle } from "lucide-react"
-import { auth, clientAuth, AuthError } from "@/lib/auth"
+import { clientAuth, type AuthUser } from "@/lib/client-auth"
 
 interface LoginFormProps {
   redirectTo?: string
@@ -35,33 +35,45 @@ export function LoginForm({ redirectTo = "/", isAdminLogin = false }: LoginFormP
     try {
       // Input validation
       if (!formData.username.trim() || !formData.password) {
-        throw new AuthError("Please fill in all fields", "MISSING_FIELDS")
+        throw new Error("Please fill in all fields")
       }
 
-      // Attempt login
-      const user = await auth.login(formData.username, formData.password)
+      // Call login API route
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+          isAdminLogin
+        }),
+      });
 
-      // Check if admin access is required
-      if (isAdminLogin && !auth.hasRole(user, "admin")) {
-        throw new AuthError("Access denied. Admin privileges required.", "INSUFFICIENT_PRIVILEGES")
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed')
       }
 
-      // Create session
-      const token = auth.createSession(user)
+      if (!data.success) {
+        throw new Error(data.error || 'Login failed')
+      }
+
+      const { user, token } = data;
+
+      // Store user and token in client-side storage
       clientAuth.setAuth(user, token)
 
       // Redirect based on user role and context
-      if (isAdminLogin || auth.hasRole(user, "admin")) {
+      if (isAdminLogin || ['admin', 'superadmin'].includes(user.role)) {
         router.push("/admin")
       } else {
         router.push(redirectTo)
       }
-    } catch (err) {
-      if (err instanceof AuthError) {
-        setError(err.message)
-      } else {
-        setError("An unexpected error occurred. Please try again.")
-      }
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -148,7 +160,7 @@ export function LoginForm({ redirectTo = "/", isAdminLogin = false }: LoginFormP
                 <br />
                 Username: Agungsaputra
                 <br />
-                Password: 12345678910
+                Password: 123
               </p>
             </div>
           )}
