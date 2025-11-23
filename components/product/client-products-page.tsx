@@ -127,9 +127,13 @@ export default function ClientProductsPage({ initialProducts, initialCategories 
                 >
                   <div className="aspect-square bg-muted/30 relative overflow-hidden">
                     <img
-                      src={product.image_url || "/placeholder.svg?height=300&width=300&query=networking equipment"}
+                      src={product.image_url || `/api/images?productId=${product.id}`}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "/placeholder.svg?height=300&width=300&query=networking equipment";
+                      }}
                     />
                     {product.stock_quantity <= 5 && product.stock_quantity > 0 && (
                       <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">

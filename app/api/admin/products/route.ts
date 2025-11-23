@@ -14,14 +14,14 @@ export async function GET(request: NextRequest) {
     if (id) {
       // Get single product by ID
       const [rows] = await connection.execute(
-        'SELECT id, category_id, name, description, price, cost_price, stock_quantity, min_stock_level, sku, brand, specifications, is_active, created_at FROM products WHERE id = ?',
+        'SELECT id, category_id, name, description, image_url, image_data, price, cost_price, stock_quantity, min_stock_level, sku, brand, specifications, is_active, created_at FROM products WHERE id = ?',
         [parseInt(id)]
       );
       result = Array.isArray(rows) ? rows[0] : null;
     } else {
       // Get all products
       const [rows] = await connection.execute(
-        'SELECT id, category_id, name, description, price, cost_price, stock_quantity, min_stock_level, sku, brand, specifications, is_active, created_at FROM products ORDER BY created_at DESC'
+        'SELECT id, category_id, name, description, image_url, image_data, price, cost_price, stock_quantity, min_stock_level, sku, brand, specifications, is_active, created_at FROM products ORDER BY created_at DESC'
       );
       result = Array.isArray(rows) ? rows : [];
     }
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const connection = await createDbConnection();
-    
+
     // Parse form data
     const formData = await request.formData();
     const category_id = parseInt(formData.get('category_id') as string);
@@ -53,9 +53,50 @@ export async function POST(request: NextRequest) {
     const is_active = formData.get('is_active') === 'true';
     const image = formData.get('image') as File | null;
 
+    // Log data sebelum disimpan untuk debugging
+    console.log('Creating product with data:', {
+      category_id,
+      name,
+      description,
+      price,
+      cost_price,
+      stock_quantity,
+      min_stock_level,
+      sku,
+      brand,
+      specifications,
+      is_active
+    });
+
+    // Validasi data sebelum disimpan
+    if (!category_id || !name || !sku || !brand || isNaN(price) || isNaN(cost_price) || isNaN(stock_quantity)) {
+      console.error('Validation failed for product data:', {
+        category_id, name, sku, brand, price, cost_price, stock_quantity
+      });
+      return NextResponse.json(
+        {
+          error: 'Validation failed',
+          message: 'All required fields must have valid values'
+        },
+        { status: 400 }
+      );
+    }
+
     // Handle image upload if present
     let imageData: Buffer | null = null;
     if (image) {
+      // Batasi ukuran file maksimal 800 KB di server
+      const maxSize = 800 * 1024; // 800 KB dalam bytes
+      if (image.size > maxSize) {
+        return NextResponse.json(
+          {
+            error: 'Failed to create product',
+            message: 'Ukuran gambar terlalu besar. Maksimal 800 KB.'
+          },
+          { status: 400 }
+        );
+      }
+
       const bytes = await image.arrayBuffer();
       imageData = Buffer.from(bytes);
     }
@@ -95,19 +136,21 @@ export async function POST(request: NextRequest) {
     const productId = (result as any).insertId;
 
     await connection.end();
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    console.log('Product created successfully with ID:', productId);
+
+    return NextResponse.json({
+      success: true,
       id: productId,
-      message: 'Product created successfully' 
+      message: 'Product created successfully'
     });
   } catch (error: any) {
     console.error('Database error:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to create product',
-        message: error.message 
-      }, 
+        message: error.message
+      },
       { status: 500 }
     );
   }
@@ -154,6 +197,18 @@ export async function PUT(request: NextRequest) {
     // Handle image upload if present
     let imageData: Buffer | null = null;
     if (image) {
+      // Batasi ukuran file maksimal 800 KB di server untuk update
+      const maxSize = 800 * 1024; // 800 KB dalam bytes
+      if (image.size > maxSize) {
+        return NextResponse.json(
+          {
+            error: 'Failed to update product',
+            message: 'Ukuran gambar terlalu besar. Maksimal 800 KB.'
+          },
+          { status: 400 }
+        );
+      }
+
       const bytes = await image.arrayBuffer();
       imageData = Buffer.from(bytes);
 

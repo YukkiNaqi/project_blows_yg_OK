@@ -16,7 +16,9 @@ export async function GET(request: NextRequest) {
     switch (operation) {
       case 'allProducts':
         const [products] = await connection.execute(`
-          SELECT * FROM products
+          SELECT id, category_id, name, description, image_url, price, cost_price, stock_quantity,
+                 min_stock_level, sku, brand, specifications, is_active, created_at
+          FROM products
           WHERE is_active = TRUE
           ORDER BY created_at DESC
         `);
@@ -28,7 +30,9 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
         }
         const [product] = await connection.execute(
-          'SELECT * FROM products WHERE id = ?',
+          'SELECT id, category_id, name, description, image_url, image_data, price, cost_price, stock_quantity,
+                  min_stock_level, sku, brand, specifications, is_active, created_at
+           FROM products WHERE id = ?',
           [Number(id)]
         );
         result = product;
@@ -39,7 +43,9 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
         }
         const [catProducts] = await connection.execute(`
-          SELECT * FROM products
+          SELECT id, category_id, name, description, image_url, price, cost_price, stock_quantity,
+                 min_stock_level, sku, brand, specifications, is_active, created_at
+          FROM products
           WHERE category_id = ? AND is_active = TRUE
           ORDER BY created_at DESC
         `, [Number(category)]);
@@ -48,7 +54,9 @@ export async function GET(request: NextRequest) {
 
       case 'featuredProducts':
         const [featured] = await connection.execute(`
-          SELECT * FROM products
+          SELECT id, category_id, name, description, image_url, price, cost_price, stock_quantity,
+                 min_stock_level, sku, brand, specifications, is_active, created_at
+          FROM products
           WHERE is_active = TRUE
           ORDER BY created_at DESC
           LIMIT 4

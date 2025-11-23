@@ -19,7 +19,7 @@ export interface Product {
   name: string;
   description: string;
   image_url?: string; // Optional, for backward compatibility
-  image_data?: Buffer | null; // Added for image stored in database
+  image_data: Buffer | null; // Added for image stored in database (can be null)
   price: number;
   cost_price: number;
   stock_quantity: number;
@@ -137,7 +137,7 @@ export const dbDirect = {
       const connection = await createDbConnection();
       try {
         const [rows] = await connection.execute(`
-          SELECT DISTINCT id, category_id, name, description, image_url, price, cost_price,
+          SELECT DISTINCT id, category_id, name, description, image_url, image_data, price, cost_price,
                  stock_quantity, min_stock_level, sku, brand, specifications,
                  is_active, created_at FROM products
           WHERE is_active = TRUE
@@ -153,7 +153,7 @@ export const dbDirect = {
       const connection = await createDbConnection();
       try {
         const [rows] = await connection.execute(`
-          SELECT id, category_id, name, description, image_url, price, cost_price,
+          SELECT id, category_id, name, description, image_url, image_data, price, cost_price,
                  stock_quantity, min_stock_level, sku, brand, specifications,
                  is_active, created_at FROM products WHERE id = ?
         `, [id]);
@@ -168,7 +168,7 @@ export const dbDirect = {
       const connection = await createDbConnection();
       try {
         const [rows] = await connection.execute(`
-          SELECT id, category_id, name, description, image_url, price, cost_price,
+          SELECT id, category_id, name, description, image_url, image_data, price, cost_price,
                  stock_quantity, min_stock_level, sku, brand, specifications,
                  is_active, created_at FROM products
           WHERE category_id = ? AND is_active = TRUE
@@ -184,7 +184,7 @@ export const dbDirect = {
       const connection = await createDbConnection();
       try {
         const [rows] = await connection.execute(`
-          SELECT DISTINCT id, category_id, name, description, image_url, price, cost_price,
+          SELECT DISTINCT id, category_id, name, description, image_url, image_data, price, cost_price,
                  stock_quantity, min_stock_level, sku, brand, specifications,
                  is_active, created_at FROM products
           WHERE is_active = TRUE

@@ -10,11 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { dbDirect } from '@/lib/server-db';
+import { type Category } from '@/lib/server-db';
 
 export default function NewProductPage() {
   const router = useRouter();
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     category_id: '',
@@ -34,8 +34,20 @@ export default function NewProductPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const data = await dbDirect.categories.findAll();
+        console.log('Fetching categories from API...'); // Logging untuk debugging
+        const response = await fetch('/api/admin/categories');
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch categories: ${response.status} ${response.statusText}`);
+        }
+
+        const data: Category[] = await response.json();
+        console.log('Categories fetched from API:', data); // Logging untuk debugging
+        console.log('Number of categories:', data.length); // Logging tambahan
         setCategories(data);
+
+        // Set loading ke false setelah kategori diambil
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching categories:', error);
         toast({
@@ -43,8 +55,7 @@ export default function NewProductPage() {
           description: 'Failed to load categories',
           variant: 'destructive',
         });
-      } finally {
-        setLoading(false);
+        setLoading(false); // Pastikan loading di-set false walaupun error
       }
     };
 
@@ -52,21 +63,37 @@ export default function NewProductPage() {
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-    
+    const { id, value } = e.target;
+
     setFormData(prev => ({
       ...prev,
-      [id]: type === 'checkbox' ? checked : value
+      [id]: value
     }));
+
+    console.log(`Input change - ${id}: ${value}`); // Logging untuk debugging
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+
+      // Batasi ukuran file maksimal 800 KB
+      const maxSize = 800 * 1024; // 800 KB dalam bytes
+      if (file.size > maxSize) {
+        toast({
+          title: 'Error',
+          description: 'Ukuran gambar terlalu besar. Maksimal 800 KB.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       setFormData(prev => ({
         ...prev,
-        image: e.target.files![0]
+        image: file
       }));
+
+      console.log(`Image selected: ${file.name}, size: ${file.size} bytes (${(file.size / 1024).toFixed(2)} KB)`); // Logging untuk debugging
     }
   };
 
@@ -75,35 +102,88 @@ export default function NewProductPage() {
     setLoading(true);
 
     try {
+      console.log('Form Data:', formData); // Logging untuk debugging
+
+      // Validasi data sebelum dikirim
+      if (!formData.category_id || !formData.category_id.trim() ||
+          !formData.name || !formData.name.trim() ||
+          !formData.sku || !formData.sku.trim() ||
+          !formData.brand || !formData.brand.trim() ||
+          !formData.price || !formData.price.toString().trim() ||
+          !formData.cost_price || !formData.cost_price.toString().trim() ||
+          !formData.stock_quantity || !formData.stock_quantity.toString().trim()) {
+        throw new Error('All required fields must be filled');
+      }
+
+      // Validasi ukuran file gambar jika ada
+      if (formData.image) {
+        if (formData.image.size > 800 * 1024) {
+          toast({
+            title: 'Error',
+            description: 'Ukuran gambar terlalu besar. Maksimal 800 KB. Silakan pilih gambar yang lebih kecil.',
+            variant: 'destructive',
+          });
+          // Tidak melanjutkan proses
+          return;
+        } else {
+          console.log(`Valid image size: ${(formData.image.size / 1024).toFixed(2)} KB`); // Logging untuk debugging
+        }
+      }
+
+      console.log('All required fields exist'); // Logging untuk debugging
+
+      const price = parseFloat(formData.price);
+      const costPrice = parseFloat(formData.cost_price);
+      const stockQuantity = parseInt(formData.stock_quantity);
+      const minStockLevel = parseInt(formData.min_stock_level || '5');
+
+      console.log('Parsed values:', { price, costPrice, stockQuantity, minStockLevel }); // Logging tambahan
+
+      if (isNaN(price) || isNaN(costPrice) || isNaN(stockQuantity) || isNaN(minStockLevel)) {
+        throw new Error('Price, cost price, and stock quantity must be valid numbers');
+      }
+
+      if (price <= 0 || costPrice <= 0 || stockQuantity < 0) {
+        throw new Error('Price and cost price must be greater than 0, stock quantity must be at least 0');
+      }
+
+      console.log('Values are valid'); // Logging untuk debugging
+
       const formDataToSend = new FormData();
       formDataToSend.append('category_id', formData.category_id);
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('price', formData.price);
-      formDataToSend.append('cost_price', formData.cost_price);
-      formDataToSend.append('stock_quantity', formData.stock_quantity);
-      formDataToSend.append('min_stock_level', formData.min_stock_level);
-      formDataToSend.append('sku', formData.sku);
-      formDataToSend.append('brand', formData.brand);
-      formDataToSend.append('specifications', formData.specifications);
+      formDataToSend.append('name', formData.name.trim());
+      formDataToSend.append('description', formData.description.trim() || '');
+      formDataToSend.append('price', price.toString());
+      formDataToSend.append('cost_price', costPrice.toString());
+      formDataToSend.append('stock_quantity', stockQuantity.toString());
+      formDataToSend.append('min_stock_level', minStockLevel.toString());
+      formDataToSend.append('sku', formData.sku.trim());
+      formDataToSend.append('brand', formData.brand.trim());
+      formDataToSend.append('specifications', formData.specifications || '{}');
       formDataToSend.append('is_active', formData.is_active.toString());
-      
+
       if (formData.image) {
         formDataToSend.append('image', formData.image);
       }
+
+      console.log('Sending form data to API...'); // Logging untuk debugging
 
       const response = await fetch('/api/admin/products', {
         method: 'POST',
         body: formDataToSend,
       });
 
+      console.log('Response status:', response.status); // Logging status
       const result = await response.json();
+      console.log('API Response:', result); // Logging untuk debugging
 
       if (response.ok && result.success) {
         toast({
           title: 'Success',
           description: 'Product created successfully',
         });
+        // Set flag to indicate refresh is needed
+        window.sessionStorage.setItem('shouldRefreshProducts', 'true');
         router.push('/admin/products'); // Redirect to products list
       } else {
         throw new Error(result.message || 'Failed to create product');
@@ -120,9 +200,12 @@ export default function NewProductPage() {
     }
   };
 
-  if (loading && categories.length === 0) {
-    return <div>Loading...</div>;
+  if (loading) {
+    return <div>Loading categories...</div>;
   }
+
+  console.log('Rendering form - Categories:', categories); // Logging untuk debugging
+  console.log('Rendering form - Categories length:', categories.length); // Logging tambahan
 
   return (
     <div className="space-y-6">
@@ -135,16 +218,25 @@ export default function NewProductPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="category_id">Category *</Label>
-                <Select value={formData.category_id} onValueChange={(value) => setFormData({...formData, category_id: value})}>
+                <Select value={formData.category_id} onValueChange={(value) => {
+                  console.log('Category selected:', value); // Logging untuk debugging
+                  setFormData(prev => ({...prev, category_id: value}));
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
+                    {categories.length > 0 ? (
+                      categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem key="no-category" value="no-category" disabled>
+                        No categories available (count: {categories.length})
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -258,13 +350,14 @@ export default function NewProductPage() {
                 accept="image/*"
                 onChange={handleImageChange}
               />
+              <p className="text-xs text-muted-foreground mt-1">Maksimal ukuran file: 800 KB</p>
             </div>
 
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="is_active"
                 checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData({...formData, is_active: Boolean(checked)})}
+                onCheckedChange={(checked) => setFormData(prev => ({...prev, is_active: Boolean(checked)}))}
               />
               <Label htmlFor="is_active">Product is Active</Label>
             </div>

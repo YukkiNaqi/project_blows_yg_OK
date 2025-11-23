@@ -5,11 +5,32 @@ import { createDbConnection } from './db-config';
 
 export async function createTables() {
   const connection = await createDbConnection();
-  
+
   try {
-    // Create users table
+    // Drop all tables in correct order to avoid foreign key constraint issues
+    await connection.execute(`DROP TABLE IF EXISTS service_bookings;`);
+    await connection.execute(`DROP TABLE IF EXISTS order_items;`);
+    await connection.execute(`DROP TABLE IF EXISTS orders;`);
+    await connection.execute(`DROP TABLE IF EXISTS products;`);
+    await connection.execute(`DROP TABLE IF EXISTS customers;`);
+    await connection.execute(`DROP TABLE IF EXISTS users;`);
+    await connection.execute(`DROP TABLE IF EXISTS services;`);
+    await connection.execute(`DROP TABLE IF EXISTS categories;`);
+
+    // Create all tables without foreign key constraints first
     await connection.execute(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        image_url VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    await connection.execute(`
+      CREATE TABLE users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
         email VARCHAR(100) UNIQUE NOT NULL,
@@ -22,27 +43,15 @@ export async function createTables() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
-    
-    // Create categories table
+
     await connection.execute(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        description TEXT,
-        image_url VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-    
-    // Create products table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS products (
+      CREATE TABLE products (
         id INT AUTO_INCREMENT PRIMARY KEY,
         category_id INT NOT NULL,
         name VARCHAR(255) NOT NULL,
         description TEXT,
         image_url VARCHAR(255),
+        image_data LONGBLOB,
         price DECIMAL(10, 2) NOT NULL,
         cost_price DECIMAL(10, 2) NOT NULL,
         stock_quantity INT DEFAULT 0,
@@ -52,14 +61,25 @@ export async function createTables() {
         specifications JSON,
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
-    
-    // Create orders table
+
     await connection.execute(`
-      CREATE TABLE IF NOT EXISTS orders (
+      CREATE TABLE customers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        full_name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        phone VARCHAR(20),
+        address TEXT,
+        company VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    await connection.execute(`
+      CREATE TABLE orders (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT,
         order_number VARCHAR(50) UNIQUE NOT NULL,
@@ -74,44 +94,12 @@ export async function createTables() {
         notes TEXT,
         payment_deadline TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-      )
-    `);
-    
-    // Create order_items table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS order_items (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        order_id INT NOT NULL,
-        product_id INT NOT NULL,
-        product_name VARCHAR(255) NOT NULL,  -- Keep product name for historical records
-        quantity INT NOT NULL,
-        unit_price DECIMAL(10, 2) NOT NULL,
-        total_price DECIMAL(10, 2) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-      )
-    `);
-    
-    // Create services table
-    await connection.execute(`DROP TABLE IF EXISTS customers;`);
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS customers (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        full_name VARCHAR(100) NOT NULL,
-        email VARCHAR(100) UNIQUE NOT NULL,
-        phone VARCHAR(20),
-        address TEXT,
-        company VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
-    
+
     await connection.execute(`
-      CREATE TABLE IF NOT EXISTS services (
+      CREATE TABLE services (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
@@ -122,11 +110,22 @@ export async function createTables() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
-    
-    // Create service_bookings table
-    await connection.execute(`DROP TABLE IF EXISTS service_bookings;`);
+
     await connection.execute(`
-      CREATE TABLE IF NOT EXISTS service_bookings (
+      CREATE TABLE order_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        order_id INT NOT NULL,
+        product_id INT NOT NULL,
+        product_name VARCHAR(255) NOT NULL,
+        quantity INT NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        total_price DECIMAL(10, 2) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await connection.execute(`
+      CREATE TABLE service_bookings (
         id INT AUTO_INCREMENT PRIMARY KEY,
         customer_id INT,
         customer_name VARCHAR(100) NOT NULL,
@@ -141,9 +140,34 @@ export async function createTables() {
         estimated_cost DECIMAL(10, 2),
         technician_notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
+    `);
+
+    // Now add foreign key constraints
+    await connection.execute(`
+      ALTER TABLE products ADD CONSTRAINT fk_products_category
+      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+    `);
+
+    await connection.execute(`
+      ALTER TABLE orders ADD CONSTRAINT fk_orders_user
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    `);
+
+    await connection.execute(`
+      ALTER TABLE order_items ADD CONSTRAINT fk_order_items_order
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    `);
+
+    await connection.execute(`
+      ALTER TABLE order_items ADD CONSTRAINT fk_order_items_product
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    `);
+
+    await connection.execute(`
+      ALTER TABLE service_bookings ADD CONSTRAINT fk_service_bookings_customer
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL
     `);
     
     console.log('All tables created successfully');

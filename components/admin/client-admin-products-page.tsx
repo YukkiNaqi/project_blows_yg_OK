@@ -10,10 +10,11 @@ import { type Product } from '@/lib/server-db';
 
 interface ClientAdminProductsPageProps {
   initialProducts: Product[];
+  refreshProducts?: () => void;
 }
 
-export default function ClientAdminProductsPage({ initialProducts }: ClientAdminProductsPageProps) {
-  const [products] = useState<Product[]>(initialProducts);
+export default function ClientAdminProductsPage({ initialProducts, refreshProducts }: ClientAdminProductsPageProps) {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
 
   // Define columns for the data table
   const columns = [
@@ -103,12 +104,20 @@ export default function ClientAdminProductsPage({ initialProducts }: ClientAdmin
     },
   ];
 
+  // Fungsi untuk menambah produk baru ke daftar
+  const addProductToList = (newProduct: Product) => {
+    setProducts(prevProducts => [newProduct, ...prevProducts]);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Manage Products</h1>
         <Button asChild>
-          <Link href="/admin/products/new">
+          <Link href="/admin/products/new" onClick={() => {
+            // Set callback untuk memperbarui daftar produk setelah penambahan
+            window.sessionStorage.setItem('addProductCallback', 'true');
+          }}>
             <Plus className="h-4 w-4 mr-2" />
             Add New Product
           </Link>
