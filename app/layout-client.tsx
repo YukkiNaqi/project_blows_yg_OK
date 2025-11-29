@@ -7,6 +7,7 @@ import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import { Analytics } from '@vercel/analytics/next';
 import { clearInvalidAuthData } from '@/lib/client-auth';
+import { Toaster } from '@/components/ui/toaster';
 
 // Panggil fungsi untuk membersihkan data autentikasi yang tidak valid
 if (typeof window !== 'undefined') {
@@ -36,6 +37,7 @@ export default function RootLayoutClient({ children }: RootLayoutClientProps) {
           </motion.div>
         </AnimatePresence>
         <Analytics />
+        <Toaster />
       </body>
     </html>
   );

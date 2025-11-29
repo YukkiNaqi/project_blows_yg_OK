@@ -84,6 +84,7 @@ export default function ClientAdminProductsPage({ initialProducts, refreshProduc
       header: 'Actions',
       cell: ({ row }: { row: { original: Product } }) => {
         const product = row.original;
+        console.log('Rendering action buttons for product ID:', product.id); // Debug log
         return (
           <div className="flex items-center space-x-2">
             <Button asChild variant="outline" size="sm">

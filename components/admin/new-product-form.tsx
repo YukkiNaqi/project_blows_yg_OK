@@ -30,6 +30,7 @@ export default function NewProductPage() {
     is_active: true,
     image: null as File | null,
   });
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -60,6 +61,13 @@ export default function NewProductPage() {
     };
 
     fetchCategories();
+
+    // Cleanup function untuk membersihkan URL pratinjau gambar
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -77,16 +85,31 @@ export default function NewProductPage() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
 
+      console.log('File selected:', file.name, 'Size:', file.size, 'bytes'); // Debug log
+      console.log('File size in KB:', (file.size / 1024).toFixed(2)); // Debug log
+
       // Batasi ukuran file maksimal 800 KB
       const maxSize = 800 * 1024; // 800 KB dalam bytes
+      console.log('Max allowed size:', maxSize, 'bytes'); // Debug log
+
       if (file.size > maxSize) {
+        console.log('File is too large, showing alert'); // Debug log
         toast({
           title: 'Error',
-          description: 'Ukuran gambar terlalu besar. Maksimal 800 KB.',
+          description: 'Ukuran gambar maksimal 800kb, coba untuk menggunakan gambar lain',
           variant: 'destructive',
         });
+        // Reset input file agar pengguna bisa memilih file lain
+        e.target.value = '';
+        // Hapus pratinjau gambar jika sebelumnya sudah ada
+        setImagePreview(null);
         return;
       }
+
+      console.log('File size is acceptable, creating preview'); // Debug log
+      // Buat URL pratinjau untuk file yang valid
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
 
       setFormData(prev => ({
         ...prev,
@@ -94,6 +117,9 @@ export default function NewProductPage() {
       }));
 
       console.log(`Image selected: ${file.name}, size: ${file.size} bytes (${(file.size / 1024).toFixed(2)} KB)`); // Logging untuk debugging
+    } else {
+      // Jika tidak ada file yang dipilih (misalnya pengguna membatalkan pemilihan), hapus pratinjau
+      setImagePreview(null);
     }
   };
 
@@ -120,9 +146,16 @@ export default function NewProductPage() {
         if (formData.image.size > 800 * 1024) {
           toast({
             title: 'Error',
-            description: 'Ukuran gambar terlalu besar. Maksimal 800 KB. Silakan pilih gambar yang lebih kecil.',
+            description: 'Ukuran gambar maksimal 800kb, coba untuk menggunakan gambar lain',
             variant: 'destructive',
           });
+          // Reset input file agar pengguna bisa memilih file lain
+          const imageInput = document.getElementById('image') as HTMLInputElement;
+          if (imageInput) {
+            imageInput.value = '';
+          }
+          // Hapus pratinjau gambar
+          setImagePreview(null);
           // Tidak melanjutkan proses
           return;
         } else {
@@ -197,6 +230,8 @@ export default function NewProductPage() {
       });
     } finally {
       setLoading(false);
+      // Hapus pratinjau gambar setelah pengiriman selesai
+      setImagePreview(null);
     }
   };
 
@@ -350,7 +385,21 @@ export default function NewProductPage() {
                 accept="image/*"
                 onChange={handleImageChange}
               />
-              <p className="text-xs text-muted-foreground mt-1">Maksimal ukuran file: 800 KB</p>
+              <p className="text-xs text-muted-foreground mt-1">Format: JPG, PNG, WEBP. Maksimal ukuran file: 800 KB</p>
+
+              {/* Pratinjau Gambar */}
+              {imagePreview && (
+                <div className="mt-4">
+                  <Label>Preview Gambar:</Label>
+                  <div className="mt-2 border rounded p-2 inline-block">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="max-h-48 max-w-full object-contain"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center space-x-2">

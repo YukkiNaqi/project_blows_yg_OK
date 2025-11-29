@@ -13,17 +13,24 @@ export async function GET(request: NextRequest) {
     let result;
     if (id) {
       // Get single product by ID
+      console.log('Fetching product by ID:', parseInt(id)); // Debug log
       const [rows] = await connection.execute(
         'SELECT id, category_id, name, description, image_url, image_data, price, cost_price, stock_quantity, min_stock_level, sku, brand, specifications, is_active, created_at FROM products WHERE id = ?',
         [parseInt(id)]
       );
       result = Array.isArray(rows) ? rows[0] : null;
+      console.log('Found product:', result); // Debug log
     } else {
       // Get all products
+      console.log('Fetching all products'); // Debug log
       const [rows] = await connection.execute(
         'SELECT id, category_id, name, description, image_url, image_data, price, cost_price, stock_quantity, min_stock_level, sku, brand, specifications, is_active, created_at FROM products ORDER BY created_at DESC'
       );
       result = Array.isArray(rows) ? rows : [];
+      console.log('Found', result.length, 'products'); // Debug log
+      if (result.length > 0) {
+        console.log('First few products:', result.slice(0, 3)); // Debug log
+      }
     }
 
     await connection.end();
@@ -50,7 +57,9 @@ export async function POST(request: NextRequest) {
     const sku = formData.get('sku') as string;
     const brand = formData.get('brand') as string;
     const specifications = formData.get('specifications') as string; // JSON string
-    const is_active = formData.get('is_active') === 'true';
+    // Ambil nilai is_active, default ke true jika tidak disediakan atau string kosong
+    const isActiveValue = formData.get('is_active') as string | null;
+    const is_active = isActiveValue === null || isActiveValue === '' ? true : isActiveValue === 'true';
     const image = formData.get('image') as File | null;
 
     // Log data sebelum disimpan untuk debugging
@@ -179,7 +188,9 @@ export async function PUT(request: NextRequest) {
     const sku = formData.get('sku') as string;
     const brand = formData.get('brand') as string;
     const specifications = formData.get('specifications') as string; // JSON string
-    const is_active = formData.get('is_active') === 'true';
+    // Ambil nilai is_active, default ke true jika tidak disediakan atau string kosong
+    const isActiveValue = formData.get('is_active') as string | null;
+    const is_active = isActiveValue === null || isActiveValue === '' ? true : isActiveValue === 'true';
     const image = formData.get('image') as File | null;
 
     // Parse specifications JSON if provided

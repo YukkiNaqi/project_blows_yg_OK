@@ -11,8 +11,11 @@ export default function FetchProducts() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        console.log('Fetching products from API...'); // Debug log
         const response = await fetch('/api/admin/products');
+        console.log('Response status:', response.status); // Debug log
         const data = await response.json();
+        console.log('Fetched products:', data); // Debug log
         setProducts(data);
       } catch (error) {
         console.error('Error fetching products:', error);
