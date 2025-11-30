@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Search, Eye, CheckCircle, XCircle, Clock, Truck, Package, DollarSign } from 'lucide-react';
-import { formatCurrency } from '@/lib/database';
+import { formatCurrency } from '@/lib/server-db';
 import { dbDirect } from '@/lib/server-db';
 
 interface Order {

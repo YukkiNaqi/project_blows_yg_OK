@@ -5,8 +5,9 @@ import { Header } from "@/components/header";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter } from "lucide-react";
-import { type Product, type Category } from "@/lib/database";
+import { type Product, type Category } from "@/lib/server-db";
 import { AddToCartButton } from "@/components/product/add-to-cart-button";
+import Link from "next/link";
 
 export default function ClientProductsPage({ initialProducts, initialCategories }: { initialProducts: Product[], initialCategories: Category[] }) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -127,12 +128,12 @@ export default function ClientProductsPage({ initialProducts, initialCategories 
                 >
                   <div className="aspect-square bg-muted/30 relative overflow-hidden">
                     <img
-                      src={product.image_url || `/api/images?productId=${product.id}`}
+                      src={`/api/images?productId=${product.id}`}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = "/placeholder.svg?height=300&width=300&query=networking equipment";
+                        target.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRTlFOUU5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzc1NzU3NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPktvbnRlbiBLYWxpIE5vcm1hbDwvdGV4dD48L3N2Zz4=";
                       }}
                     />
                     {product.stock_quantity <= 5 && product.stock_quantity > 0 && (
@@ -162,6 +163,16 @@ export default function ClientProductsPage({ initialProducts, initialCategories 
                       </div>
 
                       <AddToCartButton product={product} disabled={product.stock_quantity === 0} />
+                    </div>
+
+                    {/* Tombol Detail Produk */}
+                    <div className="mt-4 flex gap-2">
+                      <Link
+                        href={`/products/${product.id}`}
+                        className="flex-1 text-center py-2 px-4 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors text-sm font-medium"
+                      >
+                        Detail
+                      </Link>
                     </div>
                   </div>
                 </div>

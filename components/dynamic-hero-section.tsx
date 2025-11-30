@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Network, Wifi, Router } from "lucide-react"
 import Link from "next/link"
+import { dbDirect } from "@/lib/server-db"
 
-const slides = [
+// Gunakan data produk terbaru dari database untuk hero section
+const heroSlides = [
   {
     title: "Solusi Jaringan Terpercaya",
     subtitle: "Peralatan networking berkualitas tinggi untuk bisnis Anda",
     description:
       "Router, Switch, Kabel LAN, dan perangkat jaringan lainnya dari brand terpercaya dengan harga kompetitif.",
-    image: "/tp-link-router.jpg",
+    icon: Router,
     cta: "Lihat Produk",
     ctaLink: "/products",
   },
@@ -20,7 +22,7 @@ const slides = [
     subtitle: "Tim ahli siap membantu setup jaringan Anda",
     description:
       "Dari konsultasi hingga instalasi lengkap, kami menyediakan layanan jaringan end-to-end untuk kebutuhan bisnis.",
-    image: "/network-switch.png",
+    icon: Network,
     cta: "Pesan Layanan",
     ctaLink: "/services",
   },
@@ -29,63 +31,50 @@ const slides = [
     subtitle: "Dukungan teknis dan pemeliharaan berkelanjutan",
     description:
       "Jaminan kualitas dengan layanan after-sales dan maintenance rutin untuk menjaga performa jaringan optimal.",
-    image: "/ubiquiti-access-point.jpg",
+    icon: Wifi,
     cta: "Hubungi Kami",
     ctaLink: "/contact",
   },
 ]
 
-export function HeroSection() {
+export function DynamicHeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0)
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length)
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length)
     }, 5000)
     return () => clearInterval(timer)
   }, [])
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length)
+    setCurrentSlide((prev) => (prev + 1) % heroSlides.length)
   }
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
+    setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)
   }
+
+  const SlideIcon = heroSlides[currentSlide].icon;
 
   return (
     <section className="relative h-[600px] overflow-hidden bg-gradient-to-br from-primary/5 to-secondary/5">
-      <div className="absolute inset-0">
-        {slides.map((slide, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === currentSlide ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            <div className="absolute inset-0 bg-black/20" />
-            <img
-              src={slide.image || "/placeholder.svg"}
-              alt={slide.title}
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRTlFOUU5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzc1NzU3NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPktvbnRlbiBLYWxpIE5vcm1hbDwvdGV4dD48L3N2Zz4=";
-              }}
-            />
-          </div>
-        ))}
+      <div className="absolute inset-0 bg-muted flex items-center justify-center">
+        <div className="text-center">
+          <SlideIcon className="h-24 w-24 text-primary/20 mx-auto mb-4" />
+          <p className="text-2xl text-muted-foreground">Gambar produk {heroSlides[currentSlide].title.toLowerCase()}</p>
+        </div>
       </div>
 
       <div className="relative z-10 container mx-auto px-4 h-full flex items-center">
         <div className="max-w-2xl text-white">
           <div className="animate-fade-in-up">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 text-balance">{slides[currentSlide].title}</h1>
-            <p className="text-xl md:text-2xl mb-4 text-balance opacity-90">{slides[currentSlide].subtitle}</p>
-            <p className="text-lg mb-8 text-balance opacity-80 max-w-xl">{slides[currentSlide].description}</p>
+            <h1 className="text-4xl md:text-6xl font-bold mb-4 text-balance">{heroSlides[currentSlide].title}</h1>
+            <p className="text-xl md:text-2xl mb-4 text-balance opacity-90">{heroSlides[currentSlide].subtitle}</p>
+            <p className="text-lg mb-8 text-balance opacity-80 max-w-xl">{heroSlides[currentSlide].description}</p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
-                <Link href={slides[currentSlide].ctaLink}>{slides[currentSlide].cta}</Link>
+                <Link href={heroSlides[currentSlide].ctaLink}>{heroSlides[currentSlide].cta}</Link>
               </Button>
               <Button
                 asChild
@@ -116,7 +105,7 @@ export function HeroSection() {
 
       {/* Slide Indicators */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex space-x-2">
-        {slides.map((_, index) => (
+        {heroSlides.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}

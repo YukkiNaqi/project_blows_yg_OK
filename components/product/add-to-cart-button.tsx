@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ShoppingCart, Plus, Minus } from "lucide-react"
 import { useCart } from "@/lib/cart"
 import { toast } from "@/hooks/use-toast"
-import type { Product } from "@/lib/database"
+import type { Product } from "@/lib/server-db"
 
 interface AddToCartButtonProps {
   product: Product

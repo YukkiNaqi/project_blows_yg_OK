@@ -30,9 +30,9 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
         }
         const [product] = await connection.execute(
-          'SELECT id, category_id, name, description, image_url, image_data, price, cost_price, stock_quantity,
-                  min_stock_level, sku, brand, specifications, is_active, created_at
-           FROM products WHERE id = ?',
+          `SELECT id, category_id, name, description, image_url, image_data, price, cost_price, stock_quantity,
+                 min_stock_level, sku, brand, specifications, is_active, created_at
+           FROM products WHERE id = ?`,
           [Number(id)]
         );
         result = product;
@@ -88,6 +88,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('Database error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // Log error details for debugging
+    if (error instanceof Error) {
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+    }
+    return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }

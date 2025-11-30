@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react"
 import { useCart } from "@/lib/cart"
-import { formatCurrency } from "@/lib/database"
+import { formatCurrency } from "@/lib/server-db"
 import Link from "next/link"
 
 export function CartDrawer() {

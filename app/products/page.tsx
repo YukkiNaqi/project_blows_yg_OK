@@ -20,10 +20,7 @@ export default async function ProductsPage() {
     categoriesData = [];
   }
 
-  const fixedProductsData = productsData.map(product => ({
-    ...product,
-    image_url: product.image_url ?? "",
-  }));
+  const fixedProductsData = productsData;
 
   const fixedCategoriesData = categoriesData.map(category => ({
     ...category,

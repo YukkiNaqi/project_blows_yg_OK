@@ -2,7 +2,7 @@
 // This file contains auth functions that run on the server and can access the database
 
 import { createDbConnection } from './db-config';
-import { User } from './database';
+import { User } from './server-db';
 
 type UserWithPassword = User & { password?: string };
 

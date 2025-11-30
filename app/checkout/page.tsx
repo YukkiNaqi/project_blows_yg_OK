@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator"
 import { ShoppingCart, CreditCard, Truck, AlertCircle, MapPin } from "lucide-react"
 import { useCart } from "@/lib/cart"
 import { orderServiceClient, type Order } from "@/lib/order-service-client"
-import { formatCurrency } from "@/lib/database"
+import { formatCurrency } from "@/lib/server-db"
 import { toast } from "@/hooks/use-toast"
 
 export default function CheckoutPage() {

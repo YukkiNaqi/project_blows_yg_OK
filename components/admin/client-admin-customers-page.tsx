@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DataTable } from '@/components/admin/data-table';
 import { User, Mail, Phone, Building, MapPin, Plus, Edit, Trash2 } from 'lucide-react';
-import { formatCurrency } from '@/lib/database';
+import { formatCurrency } from '@/lib/server-db';
 
 interface Customer {
   id: number;

@@ -10,17 +10,33 @@ const dbConfig = {
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'blows_ecommerce',
   port: parseInt(process.env.DB_PORT || '3306'),
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+  // Additional configurations to handle MySQL connection issues
+  authPlugin: 'mysql_native_password', // Use native password authentication
+  connectTimeout: 60000, // Increase connection timeout
+  acquireTimeout: 60000, // Increase acquisition timeout
+  timeout: 60000, // Increase timeout
 };
 
 // Create database connection
 export const createDbConnection = async () => {
   try {
+    console.log('Attempting to connect to database with config:', {
+      host: dbConfig.host,
+      user: dbConfig.user,
+      database: dbConfig.database,
+      port: dbConfig.port,
+    });
     const connection = await createConnection(dbConfig);
     console.log('Database connected successfully');
     return connection;
   } catch (error) {
     console.error('Database connection failed:', error);
+    // Log additional error details if available
+    if (error instanceof Error) {
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+    }
     throw error;
   }
 };

@@ -14,7 +14,7 @@ interface ProductCardProps {
   index: number;
 }
 
-export const ProductCard = ({ product, index }: ProductCardProps) => {
+export const HomepageProductCard = ({ product, index }: ProductCardProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}

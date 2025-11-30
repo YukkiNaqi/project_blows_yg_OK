@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/admin/data-table';
 import { Plus, Edit, Trash2, ImageIcon } from 'lucide-react';
 import Link from 'next/link';
-import { formatCurrency } from '@/lib/database';
+import { formatCurrency } from '@/lib/server-db';
 import { type Product } from '@/lib/server-db';
 
 interface ClientAdminProductsPageProps {

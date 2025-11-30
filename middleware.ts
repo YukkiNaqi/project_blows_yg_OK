@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { parseCookies } from '@/lib/auth'
+import { parseCookies } from '@/lib/server-auth'
 
 // Daftar route yang memerlukan autentikasi
 const protectedRoutes = ['/admin']

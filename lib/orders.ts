@@ -2,7 +2,7 @@
 // Replaces the mock implementation with actual database queries
 
 import { createDbConnection } from './db-config';
-import { Order as OrderInterface } from './database';
+import { Order as OrderInterface } from './server-db';
 
 export interface OrderItem {
   product_id: number;
